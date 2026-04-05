@@ -135,3 +135,5 @@ To reduce unnecessary workflow runs, scheduled workflows have been disabled in t
 ## 📄 开源协议
 
 本项目基于 MIT 协议开源，你可以自由使用、修改和分发本项目代码，详见 [LICENSE](LICENSE) 文件。
+曼巴out
+
