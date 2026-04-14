@@ -1,49 +1,41 @@
-name: DouYin Spark Flow
-
+name: DouYin Spark Flow Schedule Run
 on:
-  schedule:
-    - cron: '30 0 * * *'     # 每天北京时间 8:30 左右，可改
-  workflow_dispatch:         # 支持手动触发
-
+  workflow_dispatch: # 允许手动触发
+  schedule: # 定时任务
+    - cron: "0 1 * * *" # 每天 1:00 UTC（对应北京时间 9:00）
 jobs:
-  spark-flow:
+  run-main:
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     environment: user-data
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          playwright install chromium --with-deps
-
-      - name: Run DouYin SparkFlow (Auto Mode)
-        env:
-          USER_DATA: ${{ secrets.USER_DATA }}
-        run: |
-          # 自动运行任务模式（跳过菜单，直接执行续火花）
-          python -c '
-import os
-import json
-import sys
-sys.path.append(".")
-os.environ["USER_DATA"] = os.getenv("USER_DATA")
-
-# 模拟自动运行（项目支持的环境变量或直接调用任务函数）
-import main
-# 如果项目有自动模式，优先用；否则强制执行任务
-if hasattr(main, "run_auto_task"):
-    main.run_auto_task()
-else:
-    print("正在执行续火花任务...")
-    # 这里可以根据项目实际代码调整调用方式
-    exec(open("main.py").read())  # 临时方案，实际需看项目结构
-          '
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Test Douyin Accessibility
+      run: |
+        curl -I https://creator.douyin.com/
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Ensure browsers are installed
+      run: playwright install chromium --with-deps --only-shell
+    - name: Run DouYin Spark Flow
+      env:
+        USER_DATA: ${{ secrets.USER_DATA }}
+      run: python main.py --doTask
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: run-logs
+        path: logs/
+  workflow-keepalive:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - uses: liskin/gh-workflow-keepalive@v1
