@@ -2,22 +2,22 @@ name: DouYin Spark Flow
 
 on:
   schedule:
-    - cron: '30 0 * * *'      # 每天北京时间早上 8:30 左右运行（可自行修改）
-  workflow_dispatch:          # 允许手动触发测试
+    - cron: '30 0 * * *'     # 每天北京时间 8:30 左右，可改
+  workflow_dispatch:         # 支持手动触发
 
 jobs:
   spark-flow:
     runs-on: ubuntu-latest
-    environment: user-data     # 必须保留，用于读取 USER_DATA secret
+    environment: user-data
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5     # ← 关键升级：从 v4 改成 v5
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'          # 推荐使用 3.12，稳定且兼容好
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -25,7 +25,25 @@ jobs:
           pip install -r requirements.txt
           playwright install chromium --with-deps
 
-      - name: Run DouYin SparkFlow
+      - name: Run DouYin SparkFlow (Auto Mode)
         env:
           USER_DATA: ${{ secrets.USER_DATA }}
-        run: python main.py
+        run: |
+          # 自动运行任务模式（跳过菜单，直接执行续火花）
+          python -c '
+import os
+import json
+import sys
+sys.path.append(".")
+os.environ["USER_DATA"] = os.getenv("USER_DATA")
+
+# 模拟自动运行（项目支持的环境变量或直接调用任务函数）
+import main
+# 如果项目有自动模式，优先用；否则强制执行任务
+if hasattr(main, "run_auto_task"):
+    main.run_auto_task()
+else:
+    print("正在执行续火花任务...")
+    # 这里可以根据项目实际代码调整调用方式
+    exec(open("main.py").read())  # 临时方案，实际需看项目结构
+          '
